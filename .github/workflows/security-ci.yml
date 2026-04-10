@@ -1,0 +1,151 @@
+name: Security CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  iac-security-scans:
+    name: IaC Security Scans
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare reports folder
+        run: mkdir -p reports
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Checkov
+        run: |
+          python -m pip install --upgrade pip
+          pip install checkov
+
+      - name: Run Checkov (Terraform)
+        id: checkov
+        continue-on-error: true
+        run: |
+          checkov -d . \
+            --framework terraform \
+            --output sarif \
+            --output-file-path reports/checkov.sarif
+
+      - name: Run Gitleaks
+        id: gitleaks
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            zricethezav/gitleaks:latest \
+            detect \
+            --source /repo \
+            --report-format sarif \
+            --report-path /repo/reports/gitleaks.sarif \
+            --redact \
+            --exit-code 1
+
+      - name: Run Trivy (Config)
+        id: trivy_config
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            aquasec/trivy:latest \
+            config /repo \
+            --format sarif \
+            --output /repo/reports/trivy-config.sarif \
+            --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
+            --exit-code 1
+
+      - name: Run Trivy (Filesystem)
+        id: trivy_fs
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            aquasec/trivy:latest \
+            fs /repo \
+            --scanners vuln,secret,misconfig \
+            --format sarif \
+            --output /repo/reports/trivy-fs.sarif \
+            --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
+            --exit-code 1
+
+      - name: Build evidence manifest
+        if: always()
+        run: |
+          echo "Security scan evidence" > reports/evidence.txt
+          echo "Repository: ${{ github.repository }}" >> reports/evidence.txt
+          echo "Commit: ${{ github.sha }}" >> reports/evidence.txt
+          echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> reports/evidence.txt
+          echo "" >> reports/evidence.txt
+          echo "Step outcomes" >> reports/evidence.txt
+          echo "- Checkov: ${{ steps.checkov.outcome }}" >> reports/evidence.txt
+          echo "- Gitleaks: ${{ steps.gitleaks.outcome }}" >> reports/evidence.txt
+          echo "- Trivy config: ${{ steps.trivy_config.outcome }}" >> reports/evidence.txt
+          echo "- Trivy fs: ${{ steps.trivy_fs.outcome }}" >> reports/evidence.txt
+          echo "" >> reports/evidence.txt
+          echo "Report checksums" >> reports/evidence.txt
+          find reports -type f -name "*.sarif" -exec sha256sum {} \; >> reports/evidence.txt || true
+
+      - name: Upload scan evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-evidence
+          path: reports/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Checkov SARIF
+        if: always() && hashFiles('reports/checkov.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/checkov.sarif
+          category: checkov
+
+      - name: Upload Gitleaks SARIF
+        if: always() && hashFiles('reports/gitleaks.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/gitleaks.sarif
+          category: gitleaks
+
+      - name: Upload Trivy Config SARIF
+        if: always() && hashFiles('reports/trivy-config.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/trivy-config.sarif
+          category: trivy-config
+
+      - name: Upload Trivy FS SARIF
+        if: always() && hashFiles('reports/trivy-fs.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Hard fail if any scanner found issues
+        if: always()
+        run: |
+          if [ "${{ steps.checkov.outcome }}" != "success" ] || \
+             [ "${{ steps.gitleaks.outcome }}" != "success" ] || \
+             [ "${{ steps.trivy_config.outcome }}" != "success" ] || \
+             [ "${{ steps.trivy_fs.outcome }}" != "success" ]; then
+            echo "One or more scanners reported findings or execution failures."
+            exit 1
+          fi
+
+          echo "All scanners passed with no findings."

@@ -1,0 +1,5 @@
+admin_email = "security@example.com"
+
+# Optional overrides
+# project_name = "cool-delivery"
+# aws_region   = "eu-west-3"

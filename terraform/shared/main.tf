@@ -1,0 +1,281 @@
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
+locals {
+  common_tags = merge(
+    {
+      Project   = var.project_name
+      ManagedBy = "Terraform"
+      Security  = "Baseline"
+      Scope     = "shared"
+    },
+    var.tags
+  )
+
+  environments = toset(["dev", "staging", "prod"])
+}
+
+resource "aws_sns_topic" "security_alerts" {
+  name              = "${var.project_name}-security-alerts"
+  kms_master_key_id = "alias/aws/sns"
+
+  tags = local.common_tags
+}
+
+resource "aws_sns_topic_subscription" "security_email" {
+  topic_arn = aws_sns_topic.security_alerts.arn
+  protocol  = "email"
+  endpoint  = var.admin_email
+}
+
+resource "aws_kms_key" "cloudtrail" {
+  description             = "KMS key for ${var.project_name} CloudTrail and central logs"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowAccountRootAdministration"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudTrailEncrypt"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogsEncrypt"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${var.aws_region}.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_kms_alias" "cloudtrail" {
+  name          = "alias/${var.project_name}-cloudtrail"
+  target_key_id = aws_kms_key.cloudtrail.key_id
+}
+
+resource "aws_s3_bucket" "security_logs" {
+  bucket        = "${var.project_name}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  force_destroy = false
+
+  tags = merge(local.common_tags, { DataClass = "audit" })
+}
+
+resource "aws_s3_bucket_versioning" "security_logs" {
+  bucket = aws_s3_bucket.security_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "security_logs" {
+  bucket = aws_s3_bucket.security_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "security_logs" {
+  bucket = aws_s3_bucket.security_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.cloudtrail.arn
+      sse_algorithm     = "aws:kms"
+    }
+    bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_policy" "security_logs" {
+  bucket = aws_s3_bucket.security_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AWSCloudTrailAclCheck"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action   = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.security_logs.arn
+      },
+      {
+        Sid    = "AWSCloudTrailWrite"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.security_logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      },
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.security_logs.arn,
+          "${aws_s3_bucket.security_logs.arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_cloudwatch_log_group" "cloudtrail" {
+  name              = "/aws/cloudtrail/${var.project_name}"
+  retention_in_days = 90
+  kms_key_id        = aws_kms_key.cloudtrail.arn
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role" "cloudtrail_to_cw" {
+  name = "${var.project_name}-cloudtrail-cw-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "cloudtrail_to_cw" {
+  name = "${var.project_name}-cloudtrail-cw-policy"
+  role = aws_iam_role.cloudtrail_to_cw.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+      }
+    ]
+  })
+}
+
+resource "aws_cloudtrail" "organization_trail" {
+  name                          = "${var.project_name}-trail"
+  s3_bucket_name                = aws_s3_bucket.security_logs.id
+  kms_key_id                    = aws_kms_key.cloudtrail.arn
+  include_global_service_events = true
+  is_multi_region_trail         = true
+  enable_logging                = true
+  enable_log_file_validation    = true
+
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+  cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail_to_cw.arn
+
+  depends_on = [aws_s3_bucket_policy.security_logs]
+
+  tags = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "cloudtrail_errors" {
+  alarm_name          = "${var.project_name}-cloudtrail-errors"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "DeliveryErrors"
+  namespace           = "AWS/CloudTrail"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "CloudTrail delivery errors detected"
+  alarm_actions       = [aws_sns_topic.security_alerts.arn]
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    TrailName = aws_cloudtrail.organization_trail.name
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_account_password_policy" "strict" {
+  minimum_password_length        = 14
+  require_lowercase_characters   = true
+  require_uppercase_characters   = true
+  require_numbers                = true
+  require_symbols                = true
+  allow_users_to_change_password = true
+  max_password_age               = 90
+  password_reuse_prevention      = 24
+  hard_expiry                    = false
+}
+
+resource "aws_kms_key" "env" {
+  for_each = local.environments
+
+  description             = "KMS key for ${var.project_name}-${each.key}"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+
+  tags = merge(local.common_tags, { Environment = each.key })
+}
+
+resource "aws_kms_alias" "env" {
+  for_each = local.environments
+
+  name          = "alias/${var.project_name}-${each.key}"
+  target_key_id = aws_kms_key.env[each.key].key_id
+}

@@ -1,0 +1,8 @@
+admin_email = "security@example.com"
+
+# Optional overrides
+# project_name          = "cool-delivery"
+# aws_region            = "eu-west-3"
+# db_engine             = "postgres"
+# db_allocated_storage  = 20
+# instance_type         = "t2.micro"
