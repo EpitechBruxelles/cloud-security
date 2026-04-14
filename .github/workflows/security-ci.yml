@@ -62,7 +62,7 @@ jobs:
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/repo" \
-            aquasec/trivy:latest \
+            aquasec/trivy:canary \
             config /repo \
             --format sarif \
             --output /repo/reports/trivy-config.sarif \
