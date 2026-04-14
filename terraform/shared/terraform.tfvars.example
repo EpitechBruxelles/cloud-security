@@ -1,5 +1,12 @@
 admin_email = "security@example.com"
 
 # Optional overrides
-# project_name = "cool-delivery"
+# project_name = "CloudRuplets"
 # aws_region   = "eu-west-3"
+
+# Demo mode (cost-optimized)
+# demo_mode                         = true
+# active_environments               = ["dev"]
+# use_customer_managed_kms          = false
+# enable_cloudtrail                 = false
+# enable_security_email_subscription = false

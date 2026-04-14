@@ -1,0 +1,15 @@
+# Cost-optimized demo profile for prod
+
+demo_mode                        = true
+enable_private_app_tier          = false
+enable_rds                       = true
+enable_cloudfront                = true
+enable_interface_endpoints       = false
+enable_flow_logs                 = false
+enable_security_alarms           = false
+enable_centralized_s3_access_logs = false
+enable_detailed_monitoring       = false
+rds_deletion_protection          = false
+rds_skip_final_snapshot          = true
+
+instance_type = "t3.micro"

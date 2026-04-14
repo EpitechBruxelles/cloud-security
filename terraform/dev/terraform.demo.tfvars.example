@@ -1,0 +1,17 @@
+# Cost-optimized demo profile for dev
+# Keeps VPC + public entrypoint + S3 app bucket, while disabling the paid tiers.
+
+demo_mode                        = true
+enable_private_app_tier          = false
+enable_rds                       = true
+enable_cloudfront                = true
+enable_interface_endpoints       = false
+enable_flow_logs                 = false
+enable_security_alarms           = false
+enable_centralized_s3_access_logs = false
+enable_detailed_monitoring       = false
+rds_deletion_protection          = false
+rds_skip_final_snapshot          = true
+
+# Optional hard cap for compute pricing risk
+instance_type = "t3.micro"

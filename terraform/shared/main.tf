@@ -3,6 +3,8 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
+  project_slug = replace(replace(lower(var.project_name), "/[^a-z0-9-]/", "-"), "/-+/", "-")
+
   common_tags = merge(
     {
       Project   = var.project_name
@@ -13,23 +15,26 @@ locals {
     var.tags
   )
 
-  environments = toset(["dev", "staging", "prod"])
+  default_environments = toset(["dev", "staging", "prod"])
+  environments         = var.demo_mode ? var.active_environments : local.default_environments
 }
 
 resource "aws_sns_topic" "security_alerts" {
-  name              = "${var.project_name}-security-alerts"
+  name              = "${local.project_slug}-security-alerts"
   kms_master_key_id = "alias/aws/sns"
 
   tags = local.common_tags
 }
 
 resource "aws_sns_topic_subscription" "security_email" {
+  count     = var.enable_security_email_subscription ? 1 : 0
   topic_arn = aws_sns_topic.security_alerts.arn
   protocol  = "email"
   endpoint  = var.admin_email
 }
 
 resource "aws_kms_key" "cloudtrail" {
+  count                   = var.use_customer_managed_kms ? 1 : 0
   description             = "KMS key for ${var.project_name} CloudTrail and central logs"
   enable_key_rotation     = true
   deletion_window_in_days = 30
@@ -80,13 +85,14 @@ resource "aws_kms_key" "cloudtrail" {
 }
 
 resource "aws_kms_alias" "cloudtrail" {
-  name          = "alias/${var.project_name}-cloudtrail"
-  target_key_id = aws_kms_key.cloudtrail.key_id
+  count         = var.use_customer_managed_kms ? 1 : 0
+  name          = "alias/${local.project_slug}-cloudtrail"
+  target_key_id = aws_kms_key.cloudtrail[0].key_id
 }
 
 resource "aws_s3_bucket" "security_logs" {
-  bucket        = "${var.project_name}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
-  force_destroy = false
+  bucket        = "${local.project_slug}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  force_destroy = true
 
   tags = merge(local.common_tags, { DataClass = "audit" })
 }
@@ -113,8 +119,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "security_logs" {
 
   rule {
     apply_server_side_encryption_by_default {
-      kms_master_key_id = aws_kms_key.cloudtrail.arn
-      sse_algorithm     = "aws:kms"
+      kms_master_key_id = var.use_customer_managed_kms ? aws_kms_key.cloudtrail[0].arn : null
+      sse_algorithm     = var.use_customer_managed_kms ? "aws:kms" : "AES256"
     }
     bucket_key_enabled = true
   }
@@ -169,15 +175,17 @@ resource "aws_s3_bucket_policy" "security_logs" {
 }
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
-  name              = "/aws/cloudtrail/${var.project_name}"
+  count             = var.enable_cloudtrail ? 1 : 0
+  name              = "/aws/cloudtrail/${local.project_slug}"
   retention_in_days = 90
-  kms_key_id        = aws_kms_key.cloudtrail.arn
+  kms_key_id        = var.use_customer_managed_kms ? aws_kms_key.cloudtrail[0].arn : null
 
   tags = local.common_tags
 }
 
 resource "aws_iam_role" "cloudtrail_to_cw" {
-  name = "${var.project_name}-cloudtrail-cw-role"
+  count = var.enable_cloudtrail ? 1 : 0
+  name  = "${local.project_slug}-cloudtrail-cw-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -196,8 +204,9 @@ resource "aws_iam_role" "cloudtrail_to_cw" {
 }
 
 resource "aws_iam_role_policy" "cloudtrail_to_cw" {
-  name = "${var.project_name}-cloudtrail-cw-policy"
-  role = aws_iam_role.cloudtrail_to_cw.id
+  count = var.enable_cloudtrail ? 1 : 0
+  name  = "${local.project_slug}-cloudtrail-cw-policy"
+  role  = aws_iam_role.cloudtrail_to_cw[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -208,23 +217,24 @@ resource "aws_iam_role_policy" "cloudtrail_to_cw" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+        Resource = "${aws_cloudwatch_log_group.cloudtrail[0].arn}:*"
       }
     ]
   })
 }
 
 resource "aws_cloudtrail" "organization_trail" {
-  name                          = "${var.project_name}-trail"
+  count                         = var.enable_cloudtrail ? 1 : 0
+  name                          = "${local.project_slug}-trail"
   s3_bucket_name                = aws_s3_bucket.security_logs.id
-  kms_key_id                    = aws_kms_key.cloudtrail.arn
+  kms_key_id                    = var.use_customer_managed_kms ? aws_kms_key.cloudtrail[0].arn : null
   include_global_service_events = true
   is_multi_region_trail         = true
   enable_logging                = true
   enable_log_file_validation    = true
 
-  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
-  cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail_to_cw.arn
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail[0].arn}:*"
+  cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail_to_cw[0].arn
 
   depends_on = [aws_s3_bucket_policy.security_logs]
 
@@ -232,7 +242,8 @@ resource "aws_cloudtrail" "organization_trail" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "cloudtrail_errors" {
-  alarm_name          = "${var.project_name}-cloudtrail-errors"
+  count               = var.enable_cloudtrail ? 1 : 0
+  alarm_name          = "${local.project_slug}-cloudtrail-errors"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 1
   metric_name         = "DeliveryErrors"
@@ -245,7 +256,7 @@ resource "aws_cloudwatch_metric_alarm" "cloudtrail_errors" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    TrailName = aws_cloudtrail.organization_trail.name
+    TrailName = aws_cloudtrail.organization_trail[0].name
   }
 
   tags = local.common_tags
@@ -264,7 +275,7 @@ resource "aws_iam_account_password_policy" "strict" {
 }
 
 resource "aws_kms_key" "env" {
-  for_each = local.environments
+  for_each = var.use_customer_managed_kms ? local.environments : toset([])
 
   description             = "KMS key for ${var.project_name}-${each.key}"
   enable_key_rotation     = true
@@ -274,8 +285,8 @@ resource "aws_kms_key" "env" {
 }
 
 resource "aws_kms_alias" "env" {
-  for_each = local.environments
+  for_each = var.use_customer_managed_kms ? local.environments : toset([])
 
-  name          = "alias/${var.project_name}-${each.key}"
+  name          = "alias/${local.project_slug}-${each.key}"
   target_key_id = aws_kms_key.env[each.key].key_id
 }

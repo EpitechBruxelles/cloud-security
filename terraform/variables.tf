@@ -1,7 +1,7 @@
 variable "project_name" {
   description = "Project prefix used in resource names."
   type        = string
-  default     = "cool-delivery"
+  default     = "CloudRuplets"
 }
 
 variable "aws_region" {
@@ -35,7 +35,7 @@ variable "db_allocated_storage" {
 variable "instance_type" {
   description = "EC2 instance type for public and app tiers."
   type        = string
-  default     = "t2.micro"
+  default     = "t3.micro"
 }
 
 variable "tags" {

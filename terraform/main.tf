@@ -7,6 +7,8 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
+  project_slug = replace(replace(lower(var.project_name), "/[^a-z0-9-]/", "-"), "/-+/", "-")
+
   common_tags = merge(
     {
       Project   = var.project_name
@@ -18,34 +20,34 @@ locals {
 
   environments = {
     dev = {
-      vpc_cidr            = "10.2.0.0/16"
-      public_subnet_cidr  = "10.2.1.0/24"
-      app_subnet_cidr     = "10.2.2.0/24"
-      db_subnet_a_cidr    = "10.2.3.0/24"
-      db_subnet_b_cidr    = "10.2.4.0/24"
-      backup_retention    = 3
+      vpc_cidr           = "10.2.0.0/16"
+      public_subnet_cidr = "10.2.1.0/24"
+      app_subnet_cidr    = "10.2.2.0/24"
+      db_subnet_a_cidr   = "10.2.3.0/24"
+      db_subnet_b_cidr   = "10.2.4.0/24"
+      backup_retention   = 3
     }
     staging = {
-      vpc_cidr            = "10.1.0.0/16"
-      public_subnet_cidr  = "10.1.1.0/24"
-      app_subnet_cidr     = "10.1.2.0/24"
-      db_subnet_a_cidr    = "10.1.3.0/24"
-      db_subnet_b_cidr    = "10.1.4.0/24"
-      backup_retention    = 3
+      vpc_cidr           = "10.1.0.0/16"
+      public_subnet_cidr = "10.1.1.0/24"
+      app_subnet_cidr    = "10.1.2.0/24"
+      db_subnet_a_cidr   = "10.1.3.0/24"
+      db_subnet_b_cidr   = "10.1.4.0/24"
+      backup_retention   = 3
     }
     prod = {
-      vpc_cidr            = "10.0.0.0/16"
-      public_subnet_cidr  = "10.0.1.0/24"
-      app_subnet_cidr     = "10.0.2.0/24"
-      db_subnet_a_cidr    = "10.0.3.0/24"
-      db_subnet_b_cidr    = "10.0.4.0/24"
-      backup_retention    = 7
+      vpc_cidr           = "10.0.0.0/16"
+      public_subnet_cidr = "10.0.1.0/24"
+      app_subnet_cidr    = "10.0.2.0/24"
+      db_subnet_a_cidr   = "10.0.3.0/24"
+      db_subnet_b_cidr   = "10.0.4.0/24"
+      backup_retention   = 7
     }
   }
 }
 
 resource "aws_sns_topic" "security_alerts" {
-  name              = "${var.project_name}-security-alerts"
+  name              = "${local.project_slug}-security-alerts"
   kms_master_key_id = "alias/aws/sns"
 
   tags = local.common_tags
@@ -108,12 +110,12 @@ resource "aws_kms_key" "cloudtrail" {
 }
 
 resource "aws_kms_alias" "cloudtrail" {
-  name          = "alias/${var.project_name}-cloudtrail"
+  name          = "alias/${local.project_slug}-cloudtrail"
   target_key_id = aws_kms_key.cloudtrail.key_id
 }
 
 resource "aws_s3_bucket" "security_logs" {
-  bucket        = "${var.project_name}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  bucket        = "${local.project_slug}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   force_destroy = false
 
   tags = merge(local.common_tags, { DataClass = "audit" })
@@ -197,7 +199,7 @@ resource "aws_s3_bucket_policy" "security_logs" {
 }
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
-  name              = "/aws/cloudtrail/${var.project_name}"
+  name              = "/aws/cloudtrail/${local.project_slug}"
   retention_in_days = 90
   kms_key_id        = aws_kms_key.cloudtrail.arn
 
@@ -205,7 +207,7 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
 }
 
 resource "aws_iam_role" "cloudtrail_to_cw" {
-  name = "${var.project_name}-cloudtrail-cw-role"
+  name = "${local.project_slug}-cloudtrail-cw-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -224,7 +226,7 @@ resource "aws_iam_role" "cloudtrail_to_cw" {
 }
 
 resource "aws_iam_role_policy" "cloudtrail_to_cw" {
-  name = "${var.project_name}-cloudtrail-cw-policy"
+  name = "${local.project_slug}-cloudtrail-cw-policy"
   role = aws_iam_role.cloudtrail_to_cw.id
 
   policy = jsonencode({
@@ -243,7 +245,7 @@ resource "aws_iam_role_policy" "cloudtrail_to_cw" {
 }
 
 resource "aws_cloudtrail" "organization_trail" {
-  name                          = "${var.project_name}-trail"
+  name                          = "${local.project_slug}-trail"
   s3_bucket_name                = aws_s3_bucket.security_logs.id
   kms_key_id                    = aws_kms_key.cloudtrail.arn
   include_global_service_events = true
@@ -260,7 +262,7 @@ resource "aws_cloudtrail" "organization_trail" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "cloudtrail_errors" {
-  alarm_name          = "${var.project_name}-cloudtrail-errors"
+  alarm_name          = "${local.project_slug}-cloudtrail-errors"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 1
   metric_name         = "DeliveryErrors"
@@ -304,7 +306,7 @@ resource "aws_kms_key" "env" {
 resource "aws_kms_alias" "env" {
   for_each = local.environments
 
-  name          = "alias/${var.project_name}-${each.key}"
+  name          = "alias/${local.project_slug}-${each.key}"
   target_key_id = aws_kms_key.env[each.key].key_id
 }
 
@@ -313,21 +315,21 @@ module "environment" {
 
   for_each = local.environments
 
-  project_name            = var.project_name
-  environment             = each.key
-  aws_region              = var.aws_region
-  vpc_cidr                = each.value.vpc_cidr
-  public_subnet_cidr      = each.value.public_subnet_cidr
-  app_subnet_cidr         = each.value.app_subnet_cidr
-  db_subnet_a_cidr        = each.value.db_subnet_a_cidr
-  db_subnet_b_cidr        = each.value.db_subnet_b_cidr
-  db_backup_retention     = each.value.backup_retention
-  db_engine               = var.db_engine
-  db_allocated_storage    = var.db_allocated_storage
-  instance_type           = var.instance_type
-  kms_key_arn             = aws_kms_key.env[each.key].arn
-  central_log_bucket_id   = aws_s3_bucket.security_logs.id
-  central_log_bucket_arn  = aws_s3_bucket.security_logs.arn
-  security_alerts_topic   = aws_sns_topic.security_alerts.arn
-  tags                    = local.common_tags
+  project_name           = var.project_name
+  environment            = each.key
+  aws_region             = var.aws_region
+  vpc_cidr               = each.value.vpc_cidr
+  public_subnet_cidr     = each.value.public_subnet_cidr
+  app_subnet_cidr        = each.value.app_subnet_cidr
+  db_subnet_a_cidr       = each.value.db_subnet_a_cidr
+  db_subnet_b_cidr       = each.value.db_subnet_b_cidr
+  db_backup_retention    = each.value.backup_retention
+  db_engine              = var.db_engine
+  db_allocated_storage   = var.db_allocated_storage
+  instance_type          = var.instance_type
+  kms_key_arn            = aws_kms_key.env[each.key].arn
+  central_log_bucket_id  = aws_s3_bucket.security_logs.id
+  central_log_bucket_arn = aws_s3_bucket.security_logs.arn
+  security_alerts_topic  = aws_sns_topic.security_alerts.arn
+  tags                   = local.common_tags
 }

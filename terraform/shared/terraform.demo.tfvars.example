@@ -1,0 +1,9 @@
+admin_email = "security@example.com"
+project_name = "CloudRuplets"
+
+# Demo mode: create only what is strictly needed by one active environment.
+demo_mode                          = true
+active_environments                = ["dev"]
+use_customer_managed_kms           = false
+enable_cloudtrail                  = true
+enable_security_email_subscription = true
