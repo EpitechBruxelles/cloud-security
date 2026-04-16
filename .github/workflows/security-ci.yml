@@ -65,6 +65,7 @@ jobs:
             -v "${{ github.workspace }}:/repo" \
             aquasec/trivy:canary \
             config /repo \
+            --ignorefile /repo/.trivyignore \
             --format sarif \
             --output /repo/reports/trivy-config.sarif \
             --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
@@ -79,6 +80,7 @@ jobs:
             aquasec/trivy:canary \
             fs /repo \
             --scanners vuln,secret,misconfig \
+            --ignorefile /repo/.trivyignore \
             --format sarif \
             --output /repo/reports/trivy-fs.sarif \
             --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
