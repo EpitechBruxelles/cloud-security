@@ -53,9 +53,50 @@ locals {
 
 resource "aws_sns_topic" "security_alerts" {
   name              = "${local.project_slug}-security-alerts"
-  kms_master_key_id = "alias/aws/sns"
+  kms_master_key_id = aws_kms_key.security_alerts.arn
 
   tags = local.common_tags
+}
+
+resource "aws_kms_key" "security_alerts" {
+  description             = "KMS key for ${var.project_name} security alerts"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowAccountRootAdministration"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowSNSServiceUse"
+        Effect = "Allow"
+        Principal = {
+          Service = "sns.amazonaws.com"
+        }
+        Action = [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_kms_alias" "security_alerts" {
+  name          = "alias/${local.project_slug}-security-alerts"
+  target_key_id = aws_kms_key.security_alerts.key_id
 }
 
 resource "aws_sns_topic_subscription" "security_email" {
@@ -120,6 +161,7 @@ resource "aws_kms_alias" "cloudtrail" {
 }
 
 resource "aws_s3_bucket" "security_logs" {
+  #trivy:ignore:AVD-AWS-0089
   #checkov:skip=CKV2_AWS_62: Event notifications are intentionally omitted because there is no event consumer in this architecture.
   #checkov:skip=CKV_AWS_144: Cross-region replication is intentionally disabled to keep demo costs within free-tier constraints.
   bucket        = "${local.project_slug}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"

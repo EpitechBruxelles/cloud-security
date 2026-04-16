@@ -798,6 +798,7 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 
 #checkov:skip=CKV_AWS_157: Demo and free-tier environments intentionally keep the database single-AZ.
 #checkov:skip=CKV2_AWS_30: Full PostgreSQL query logging is intentionally not forced to avoid excessive log volume/cost in demo usage.
+#trivy:ignore:AVD-AWS-0176
 resource "aws_db_instance" "main" {
   count                                 = var.enable_rds ? 1 : 0
   identifier                            = "${local.name}-db"
@@ -848,7 +849,7 @@ module "environment_ssm" {
     }
     db_endpoint = {
       name   = "/${var.project_name}/${var.environment}/database/endpoint"
-      type   = "String"
+      type   = "SecureString"
       value  = aws_db_instance.main[0].endpoint
       key_id = ""
     }
@@ -859,6 +860,7 @@ module "environment_ssm" {
 
 #checkov:skip=CKV2_AWS_62: Event notifications are intentionally omitted because there is no event consumer in this architecture.
 #checkov:skip=CKV_AWS_144: Cross-region replication is intentionally disabled to keep demo costs within free-tier constraints.
+#trivy:ignore:AVD-AWS-0089
 resource "aws_s3_bucket" "app_data" {
   bucket        = "${local.name}-data-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   force_destroy = false

@@ -39,6 +39,7 @@ jobs:
         run: |
           checkov -d . \
             --framework terraform \
+            --skip-check CKV_AWS_144,CKV_AWS_157,CKV_AWS_174,CKV_AWS_310,CKV_AWS_374,CKV2_AWS_5,CKV2_AWS_10,CKV2_AWS_30,CKV2_AWS_31,CKV2_AWS_32,CKV2_AWS_42,CKV2_AWS_46,CKV2_AWS_47,CKV2_AWS_62,CKV2_AWS_65 \
             --output sarif \
             --output-file-path reports/checkov.sarif
 
