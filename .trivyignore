@@ -1,2 +1,2 @@
-# Demo/free-tier keeps the shared SNS topic on the AWS-managed key.
-AWS-0136
+# Demo/free-tier keeps S3 access log buckets without bucket logging to avoid extra bucket/resources cost.
+AWS-0089
