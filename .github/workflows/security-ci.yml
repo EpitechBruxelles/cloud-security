@@ -75,7 +75,7 @@ jobs:
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/repo" \
-            aquasec/trivy:latest \
+            aquasec/trivy:canary \
             fs /repo \
             --scanners vuln,secret,misconfig \
             --format sarif \

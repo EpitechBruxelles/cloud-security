@@ -2,6 +2,11 @@ provider "aws" {
   region = var.aws_region
 }
 
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
@@ -115,6 +120,8 @@ resource "aws_kms_alias" "cloudtrail" {
 }
 
 resource "aws_s3_bucket" "security_logs" {
+  #checkov:skip=CKV2_AWS_62: Event notifications are intentionally omitted because there is no event consumer in this architecture.
+  #checkov:skip=CKV_AWS_144: Cross-region replication is intentionally disabled to keep demo costs within free-tier constraints.
   bucket        = "${local.project_slug}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   force_destroy = false
 
@@ -147,6 +154,25 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "security_logs" {
       sse_algorithm     = "aws:kms"
     }
     bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "security_logs" {
+  bucket = aws_s3_bucket.security_logs.id
+
+  rule {
+    id     = "expire-audit-objects"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 365
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
@@ -200,7 +226,7 @@ resource "aws_s3_bucket_policy" "security_logs" {
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   name              = "/aws/cloudtrail/${local.project_slug}"
-  retention_in_days = 90
+  retention_in_days = 365
   kms_key_id        = aws_kms_key.cloudtrail.arn
 
   tags = local.common_tags
@@ -245,9 +271,11 @@ resource "aws_iam_role_policy" "cloudtrail_to_cw" {
 }
 
 resource "aws_cloudtrail" "organization_trail" {
+  #checkov:skip=CKV2_AWS_10: CloudTrail is integrated with CloudWatch Logs via explicit log group and role ARNs in this configuration.
   name                          = "${local.project_slug}-trail"
   s3_bucket_name                = aws_s3_bucket.security_logs.id
   kms_key_id                    = aws_kms_key.cloudtrail.arn
+  sns_topic_name                = aws_sns_topic.security_alerts.name
   include_global_service_events = true
   is_multi_region_trail         = true
   enable_logging                = true
@@ -299,6 +327,20 @@ resource "aws_kms_key" "env" {
   description             = "KMS key for ${var.project_name}-${each.key}"
   enable_key_rotation     = true
   deletion_window_in_days = 30
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowAccountRootAdministration"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      }
+    ]
+  })
 
   tags = merge(local.common_tags, { Environment = each.key })
 }
@@ -314,6 +356,11 @@ module "environment" {
   source = "./modules/environment"
 
   for_each = local.environments
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
 
   project_name           = var.project_name
   environment            = each.key

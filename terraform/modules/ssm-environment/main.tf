@@ -1,3 +1,4 @@
+#checkov:skip=CKV2_AWS_34: This reusable module supports both SecureString secrets and non-secret String parameters by design.
 resource "aws_ssm_parameter" "this" {
   for_each = var.parameters
 

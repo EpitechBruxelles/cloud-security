@@ -157,6 +157,8 @@ resource "aws_kms_alias" "cloudtrail" {
   target_key_id = aws_kms_key.cloudtrail[0].key_id
 }
 
+#checkov:skip=CKV2_AWS_62: Event notifications are intentionally omitted because there is no event consumer in this architecture.
+#checkov:skip=CKV_AWS_144: Cross-region replication is intentionally disabled to keep demo costs within free-tier constraints.
 resource "aws_s3_bucket" "security_logs" {
   bucket        = "${local.project_slug}-security-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   force_destroy = true
@@ -189,6 +191,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "security_logs" {
 
     expiration {
       days = 365
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }
@@ -372,6 +378,20 @@ resource "aws_kms_key" "env" {
   description             = "KMS key for ${var.project_name}-${each.key}"
   enable_key_rotation     = true
   deletion_window_in_days = 30
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowAccountRootAdministration"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      }
+    ]
+  })
 
   tags = merge(local.common_tags, { Environment = each.key })
 }

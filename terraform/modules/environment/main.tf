@@ -74,6 +74,15 @@ resource "aws_vpc" "this" {
   tags = merge(local.common_tags, { Name = "${local.name}-vpc" })
 }
 
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.this.id
+
+  ingress = []
+  egress  = []
+
+  tags = merge(local.common_tags, { Name = "${local.name}-default-sg" })
+}
+
 resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
 
@@ -166,6 +175,7 @@ resource "aws_vpc_endpoint" "s3" {
   tags = merge(local.common_tags, { Name = "${local.name}-vpce-s3" })
 }
 
+#checkov:skip=CKV2_AWS_5: This security group is conditionally attached to interface endpoints when enabled.
 resource "aws_security_group" "vpce" {
   count                  = var.enable_interface_endpoints ? 1 : 0
   name                   = "${local.name}-vpce-sg"
@@ -303,6 +313,7 @@ resource "aws_security_group" "app" {
   tags = merge(local.common_tags, { Name = "${local.name}-app-sg" })
 }
 
+#checkov:skip=CKV2_AWS_5: This security group is attached to RDS only when the database tier is enabled.
 resource "aws_security_group" "db" {
   count                  = var.enable_rds ? 1 : 0
   name                   = "${local.name}-db-sg"
@@ -568,6 +579,8 @@ resource "aws_eip_association" "public" {
 #checkov:skip=CKV2_AWS_42: Demo mode uses the AWS-managed CloudFront certificate because the repository does not manage a public domain.
 #checkov:skip=CKV_AWS_310: Single-origin demo distribution does not use origin failover.
 #checkov:skip=CKV_AWS_374: Geo restriction is intentionally left open for the demo audience.
+#checkov:skip=CKV2_AWS_46: This distribution uses an EC2 custom origin, so S3 origin access controls are not applicable.
+#checkov:skip=CKV2_AWS_47: The Log4j managed rule group is intentionally not enabled to keep WAF cost and complexity aligned with demo constraints.
 resource "aws_cloudfront_distribution" "public" {
   count   = var.enable_cloudfront ? 1 : 0
   enabled = true
@@ -625,6 +638,7 @@ resource "aws_cloudfront_distribution" "public" {
 
   viewer_certificate {
     cloudfront_default_certificate = true
+    minimum_protocol_version       = "TLSv1.2_2021"
   }
 
   web_acl_id = var.enable_cloudfront ? aws_wafv2_web_acl.cloudfront[0].arn : null
@@ -634,6 +648,7 @@ resource "aws_cloudfront_distribution" "public" {
   tags = merge(local.common_tags, { Name = "${local.name}-cloudfront" })
 }
 
+#checkov:skip=CKV2_AWS_31: WAF logging requires additional paid data processing/storage not aligned with free-tier demo constraints.
 resource "aws_wafv2_web_acl" "cloudfront" {
   count    = var.enable_cloudfront ? 1 : 0
   provider = aws.us_east_1
@@ -782,6 +797,7 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 }
 
 #checkov:skip=CKV_AWS_157: Demo and free-tier environments intentionally keep the database single-AZ.
+#checkov:skip=CKV2_AWS_30: Full PostgreSQL query logging is intentionally not forced to avoid excessive log volume/cost in demo usage.
 resource "aws_db_instance" "main" {
   count                                 = var.enable_rds ? 1 : 0
   identifier                            = "${local.name}-db"
@@ -841,6 +857,8 @@ module "environment_ssm" {
   tags = local.common_tags
 }
 
+#checkov:skip=CKV2_AWS_62: Event notifications are intentionally omitted because there is no event consumer in this architecture.
+#checkov:skip=CKV_AWS_144: Cross-region replication is intentionally disabled to keep demo costs within free-tier constraints.
 resource "aws_s3_bucket" "app_data" {
   bucket        = "${local.name}-data-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   force_destroy = false
@@ -848,6 +866,7 @@ resource "aws_s3_bucket" "app_data" {
   tags = merge(local.common_tags, { Name = "${local.name}-data" })
 }
 
+#checkov:skip=CKV2_AWS_65: ACLs are intentionally required for CloudFront standard logs delivery to this bucket.
 resource "aws_s3_bucket_ownership_controls" "app_data" {
   bucket = aws_s3_bucket.app_data.id
 
@@ -913,6 +932,21 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "app_data" {
   }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "app_data" {
+  bucket = aws_s3_bucket.app_data.id
+
+  rule {
+    id     = "abort-incomplete-multipart-uploads"
+    status = "Enabled"
+
+    filter {}
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+}
+
 resource "aws_s3_bucket_logging" "app_data" {
   count  = var.enable_centralized_s3_access_logs && var.central_log_bucket_id != null && var.central_log_bucket_id != "" ? 1 : 0
   bucket = aws_s3_bucket.app_data.id
@@ -949,7 +983,7 @@ resource "aws_s3_bucket_policy" "app_data_tls" {
 resource "aws_cloudwatch_log_group" "flow_logs" {
   count             = var.enable_flow_logs ? 1 : 0
   name              = "/aws/vpc/${local.name}/flow-logs"
-  retention_in_days = 30
+  retention_in_days = 365
   kms_key_id        = local.use_customer_managed_kms ? var.kms_key_arn : null
 
   tags = local.common_tags
