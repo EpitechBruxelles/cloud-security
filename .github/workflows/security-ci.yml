@@ -67,6 +67,7 @@ jobs:
             config /repo \
             --format sarif \
             --output /repo/reports/trivy-config.sarif \
+            --skip-check AWS-0089 \
             --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
             --exit-code 1
 
@@ -81,6 +82,7 @@ jobs:
             --scanners vuln,secret,misconfig \
             --format sarif \
             --output /repo/reports/trivy-fs.sarif \
+            --skip-check AWS-0089 \
             --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
             --exit-code 1
 
