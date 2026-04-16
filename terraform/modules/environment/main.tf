@@ -738,7 +738,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
 resource "aws_db_subnet_group" "this" {
   count      = var.enable_rds ? 1 : 0
-  name       = "${local.name}-db-subnet-group"
+  name       = "${local.name}-${replace(replace(var.vpc_cidr, "/", "-"), ".", "-")}-db-subnet-group"
   subnet_ids = [aws_subnet.db_a.id, aws_subnet.db_b.id]
 
   tags = merge(local.common_tags, { Name = "${local.name}-db-subnet-group" })
