@@ -21,9 +21,36 @@ locals {
 
 resource "aws_sns_topic" "security_alerts" {
   name              = "${local.project_slug}-security-alerts"
-  kms_master_key_id = "alias/aws/sns"
+  kms_master_key_id = var.use_customer_managed_kms ? aws_kms_key.cloudtrail[0].arn : null
 
   tags = local.common_tags
+}
+
+resource "aws_sns_topic_policy" "security_alerts" {
+  arn = aws_sns_topic.security_alerts.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudTrailPublish"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action   = "SNS:Publish"
+        Resource = aws_sns_topic.security_alerts.arn
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+          ArnLike = {
+            "aws:SourceArn" = "arn:aws:cloudtrail:*:${data.aws_caller_identity.current.account_id}:trail/${local.project_slug}-trail"
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_sns_topic_subscription" "security_email" {
@@ -64,6 +91,46 @@ resource "aws_kms_key" "cloudtrail" {
         Resource = "*"
       },
       {
+        Sid    = "AllowSNSServiceUseOfKey"
+        Effect = "Allow"
+        Principal = {
+          Service = "sns.amazonaws.com"
+        }
+        Action = [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+          ArnLike = {
+            "aws:SourceArn" = "arn:aws:sns:*:${data.aws_caller_identity.current.account_id}:${local.project_slug}-security-alerts"
+          }
+        }
+      },
+      {
+        Sid    = "AllowCloudTrailToUseSNSKmsKey"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+          ArnLike = {
+            "aws:SourceArn" = "arn:aws:cloudtrail:*:${data.aws_caller_identity.current.account_id}:trail/${local.project_slug}-trail"
+          }
+        }
+      },
+      {
         Sid    = "AllowCloudWatchLogsEncrypt"
         Effect = "Allow"
         Principal = {
@@ -102,6 +169,27 @@ resource "aws_s3_bucket_versioning" "security_logs" {
 
   versioning_configuration {
     status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_logging" "security_logs" {
+  bucket        = aws_s3_bucket.security_logs.id
+  target_bucket = aws_s3_bucket.security_logs.id
+  target_prefix = "access-logs/"
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "security_logs" {
+  bucket = aws_s3_bucket.security_logs.id
+
+  rule {
+    id     = "expire-audit-objects"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 365
+    }
   }
 }
 
@@ -177,7 +265,7 @@ resource "aws_s3_bucket_policy" "security_logs" {
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   count             = var.enable_cloudtrail ? 1 : 0
   name              = "/aws/cloudtrail/${local.project_slug}"
-  retention_in_days = 90
+  retention_in_days = 365
   kms_key_id        = var.use_customer_managed_kms ? aws_kms_key.cloudtrail[0].arn : null
 
   tags = local.common_tags
@@ -228,6 +316,7 @@ resource "aws_cloudtrail" "organization_trail" {
   name                          = "${local.project_slug}-trail"
   s3_bucket_name                = aws_s3_bucket.security_logs.id
   kms_key_id                    = var.use_customer_managed_kms ? aws_kms_key.cloudtrail[0].arn : null
+  sns_topic_name                = aws_sns_topic.security_alerts.name
   include_global_service_events = true
   is_multi_region_trail         = true
   enable_logging                = true
@@ -236,7 +325,10 @@ resource "aws_cloudtrail" "organization_trail" {
   cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail[0].arn}:*"
   cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail_to_cw[0].arn
 
-  depends_on = [aws_s3_bucket_policy.security_logs]
+  depends_on = [
+    aws_s3_bucket_policy.security_logs,
+    aws_sns_topic_policy.security_alerts
+  ]
 
   tags = local.common_tags
 }

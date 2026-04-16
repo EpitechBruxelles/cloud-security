@@ -1,0 +1,1106 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "fullName": "Trivy Vulnerability Scanner",
+          "informationUri": "https://github.com/aquasecurity/trivy",
+          "name": "Trivy",
+          "rules": [
+            {
+              "id": "AWS-0089",
+              "name": "Misconfiguration",
+              "shortDescription": {
+                "text": "S3 Bucket Logging"
+              },
+              "fullDescription": {
+                "text": "Ensures S3 bucket logging is enabled for S3 buckets"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "helpUri": "https://avd.aquasec.com/misconfig/aws-0089",
+              "help": {
+                "text": "Misconfiguration AWS-0089\nType: Terraform Security Check\nSeverity: LOW\nCheck: S3 Bucket Logging\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)\nEnsures S3 bucket logging is enabled for S3 buckets",
+                "markdown": "**Misconfiguration AWS-0089**\n| Type | Severity | Check | Message | Link |\n| --- | --- | --- | --- | --- |\n|Terraform Security Check|LOW|S3 Bucket Logging|Bucket has logging disabled|[AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)|\n\nEnsures S3 bucket logging is enabled for S3 buckets"
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "2.0",
+                "tags": [
+                  "misconfiguration",
+                  "security",
+                  "LOW"
+                ]
+              }
+            },
+            {
+              "id": "AWS-0136",
+              "name": "Misconfiguration",
+              "shortDescription": {
+                "text": "SNS topic not encrypted with CMK."
+              },
+              "fullDescription": {
+                "text": "Topics should be encrypted with customer managed KMS keys and not default AWS managed keys, in order to allow granular key management.\n"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://avd.aquasec.com/misconfig/aws-0136",
+              "help": {
+                "text": "Misconfiguration AWS-0136\nType: Terraform Security Check\nSeverity: HIGH\nCheck: SNS topic not encrypted with CMK.\nMessage: Topic encryption does not use a customer managed key.\nLink: [AWS-0136](https://avd.aquasec.com/misconfig/aws-0136)\nTopics should be encrypted with customer managed KMS keys and not default AWS managed keys, in order to allow granular key management.\n",
+                "markdown": "**Misconfiguration AWS-0136**\n| Type | Severity | Check | Message | Link |\n| --- | --- | --- | --- | --- |\n|Terraform Security Check|HIGH|SNS topic not encrypted with CMK.|Topic encryption does not use a customer managed key.|[AWS-0136](https://avd.aquasec.com/misconfig/aws-0136)|\n\nTopics should be encrypted with customer managed KMS keys and not default AWS managed keys, in order to allow granular key management.\n"
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "8.0",
+                "tags": [
+                  "misconfiguration",
+                  "security",
+                  "HIGH"
+                ]
+              }
+            },
+            {
+              "id": "AWS-0010",
+              "name": "Misconfiguration",
+              "shortDescription": {
+                "text": "Cloudfront distribution should have Access Logging configured"
+              },
+              "fullDescription": {
+                "text": "You should configure CloudFront Access Logging to create log files that contain detailed information about every user request that CloudFront receives\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://avd.aquasec.com/misconfig/aws-0010",
+              "help": {
+                "text": "Misconfiguration AWS-0010\nType: Terraform Security Check\nSeverity: MEDIUM\nCheck: Cloudfront distribution should have Access Logging configured\nMessage: Distribution does not have logging enabled\nLink: [AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)\nYou should configure CloudFront Access Logging to create log files that contain detailed information about every user request that CloudFront receives\n",
+                "markdown": "**Misconfiguration AWS-0010**\n| Type | Severity | Check | Message | Link |\n| --- | --- | --- | --- | --- |\n|Terraform Security Check|MEDIUM|Cloudfront distribution should have Access Logging configured|Distribution does not have logging enabled|[AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)|\n\nYou should configure CloudFront Access Logging to create log files that contain detailed information about every user request that CloudFront receives\n"
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "5.5",
+                "tags": [
+                  "misconfiguration",
+                  "security",
+                  "MEDIUM"
+                ]
+              }
+            },
+            {
+              "id": "AWS-0104",
+              "name": "Misconfiguration",
+              "shortDescription": {
+                "text": "A security group rule should not allow unrestricted egress to any IP address."
+              },
+              "fullDescription": {
+                "text": "Opening up ports to connect out to the public internet is generally to be avoided. You should restrict access to IP addresses or ranges that are explicitly required where possible.\n"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://avd.aquasec.com/misconfig/aws-0104",
+              "help": {
+                "text": "Misconfiguration AWS-0104\nType: Terraform Security Check\nSeverity: CRITICAL\nCheck: A security group rule should not allow unrestricted egress to any IP address.\nMessage: Security group rule allows unrestricted egress to any IP address.\nLink: [AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)\nOpening up ports to connect out to the public internet is generally to be avoided. You should restrict access to IP addresses or ranges that are explicitly required where possible.\n",
+                "markdown": "**Misconfiguration AWS-0104**\n| Type | Severity | Check | Message | Link |\n| --- | --- | --- | --- | --- |\n|Terraform Security Check|CRITICAL|A security group rule should not allow unrestricted egress to any IP address.|Security group rule allows unrestricted egress to any IP address.|[AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)|\n\nOpening up ports to connect out to the public internet is generally to be avoided. You should restrict access to IP addresses or ranges that are explicitly required where possible.\n"
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "9.5",
+                "tags": [
+                  "misconfiguration",
+                  "security",
+                  "CRITICAL"
+                ]
+              }
+            },
+            {
+              "id": "AWS-0164",
+              "name": "Misconfiguration",
+              "shortDescription": {
+                "text": "Instances in a subnet should not receive a public IP address by default."
+              },
+              "fullDescription": {
+                "text": "You should limit the provision of public IP addresses for resources. Resources should not be exposed on the public internet, but should have access limited to consumers required for the function of your application.\n"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://avd.aquasec.com/misconfig/aws-0164",
+              "help": {
+                "text": "Misconfiguration AWS-0164\nType: Terraform Security Check\nSeverity: HIGH\nCheck: Instances in a subnet should not receive a public IP address by default.\nMessage: Subnet associates public IP address.\nLink: [AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)\nYou should limit the provision of public IP addresses for resources. Resources should not be exposed on the public internet, but should have access limited to consumers required for the function of your application.\n",
+                "markdown": "**Misconfiguration AWS-0164**\n| Type | Severity | Check | Message | Link |\n| --- | --- | --- | --- | --- |\n|Terraform Security Check|HIGH|Instances in a subnet should not receive a public IP address by default.|Subnet associates public IP address.|[AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)|\n\nYou should limit the provision of public IP addresses for resources. Resources should not be exposed on the public internet, but should have access limited to consumers required for the function of your application.\n"
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "8.0",
+                "tags": [
+                  "misconfiguration",
+                  "security",
+                  "HIGH"
+                ]
+              }
+            },
+            {
+              "id": "AWS-0176",
+              "name": "Misconfiguration",
+              "shortDescription": {
+                "text": "RDS IAM Database Authentication Disabled"
+              },
+              "fullDescription": {
+                "text": "Ensure IAM Database Authentication is enabled for RDS database instances to manage database access"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://avd.aquasec.com/misconfig/aws-0176",
+              "help": {
+                "text": "Misconfiguration AWS-0176\nType: Terraform Security Check\nSeverity: MEDIUM\nCheck: RDS IAM Database Authentication Disabled\nMessage: Instance does not have IAM Authentication enabled\nLink: [AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)\nEnsure IAM Database Authentication is enabled for RDS database instances to manage database access",
+                "markdown": "**Misconfiguration AWS-0176**\n| Type | Severity | Check | Message | Link |\n| --- | --- | --- | --- | --- |\n|Terraform Security Check|MEDIUM|RDS IAM Database Authentication Disabled|Instance does not have IAM Authentication enabled|[AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)|\n\nEnsure IAM Database Authentication is enabled for RDS database instances to manage database access"
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "5.5",
+                "tags": [
+                  "misconfiguration",
+                  "security",
+                  "MEDIUM"
+                ]
+              }
+            }
+          ],
+          "version": "0.69.0-SNAPSHOT-bda9710eb"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 117,
+                  "startColumn": 1,
+                  "endLine": 122,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0136",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/main.tf\nType: terraform\nVulnerability AWS-0136\nSeverity: HIGH\nMessage: Topic encryption does not use a customer managed key.\nLink: [AWS-0136](https://avd.aquasec.com/misconfig/aws-0136)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 51,
+                  "startColumn": 1,
+                  "endLine": 51,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0010",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0010\nSeverity: MEDIUM\nMessage: Distribution does not have logging enabled\nLink: [AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 523,
+                  "startColumn": 1,
+                  "endLine": 571,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0010",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0010\nSeverity: MEDIUM\nMessage: Distribution does not have logging enabled\nLink: [AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 523,
+                  "startColumn": 1,
+                  "endLine": 571,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0010",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0010\nSeverity: MEDIUM\nMessage: Distribution does not have logging enabled\nLink: [AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 523,
+                  "startColumn": 1,
+                  "endLine": 571,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0010",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0010\nSeverity: MEDIUM\nMessage: Distribution does not have logging enabled\nLink: [AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 523,
+                  "startColumn": 1,
+                  "endLine": 571,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0010",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0010\nSeverity: MEDIUM\nMessage: Distribution does not have logging enabled\nLink: [AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 523,
+                  "startColumn": 1,
+                  "endLine": 571,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0010",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0010\nSeverity: MEDIUM\nMessage: Distribution does not have logging enabled\nLink: [AWS-0010](https://avd.aquasec.com/misconfig/aws-0010)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 523,
+                  "startColumn": 1,
+                  "endLine": 571,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 724,
+                  "startColumn": 1,
+                  "endLine": 729,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 724,
+                  "startColumn": 1,
+                  "endLine": 729,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 724,
+                  "startColumn": 1,
+                  "endLine": 729,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 724,
+                  "startColumn": 1,
+                  "endLine": 729,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 724,
+                  "startColumn": 1,
+                  "endLine": 729,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 724,
+                  "startColumn": 1,
+                  "endLine": 729,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0104",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0104\nSeverity: CRITICAL\nMessage: Security group rule allows unrestricted egress to any IP address.\nLink: [AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 250,
+                  "startColumn": 1,
+                  "endLine": 250,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0104",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0104\nSeverity: CRITICAL\nMessage: Security group rule allows unrestricted egress to any IP address.\nLink: [AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 250,
+                  "startColumn": 1,
+                  "endLine": 250,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0104",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0104\nSeverity: CRITICAL\nMessage: Security group rule allows unrestricted egress to any IP address.\nLink: [AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 250,
+                  "startColumn": 1,
+                  "endLine": 250,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0104",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0104\nSeverity: CRITICAL\nMessage: Security group rule allows unrestricted egress to any IP address.\nLink: [AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 250,
+                  "startColumn": 1,
+                  "endLine": 250,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0104",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0104\nSeverity: CRITICAL\nMessage: Security group rule allows unrestricted egress to any IP address.\nLink: [AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 250,
+                  "startColumn": 1,
+                  "endLine": 250,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0104",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0104\nSeverity: CRITICAL\nMessage: Security group rule allows unrestricted egress to any IP address.\nLink: [AWS-0104](https://avd.aquasec.com/misconfig/aws-0104)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 250,
+                  "startColumn": 1,
+                  "endLine": 250,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0164",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0164\nSeverity: HIGH\nMessage: Subnet associates public IP address.\nLink: [AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 1,
+                  "endLine": 79,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0164",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0164\nSeverity: HIGH\nMessage: Subnet associates public IP address.\nLink: [AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 1,
+                  "endLine": 79,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0164",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0164\nSeverity: HIGH\nMessage: Subnet associates public IP address.\nLink: [AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 1,
+                  "endLine": 79,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0164",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0164\nSeverity: HIGH\nMessage: Subnet associates public IP address.\nLink: [AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 1,
+                  "endLine": 79,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0164",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0164\nSeverity: HIGH\nMessage: Subnet associates public IP address.\nLink: [AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 1,
+                  "endLine": 79,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0164",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0164\nSeverity: HIGH\nMessage: Subnet associates public IP address.\nLink: [AWS-0164](https://avd.aquasec.com/misconfig/aws-0164)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 1,
+                  "endLine": 79,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0176",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0176\nSeverity: MEDIUM\nMessage: Instance does not have IAM Authentication enabled\nLink: [AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 672,
+                  "startColumn": 1,
+                  "endLine": 703,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0176",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0176\nSeverity: MEDIUM\nMessage: Instance does not have IAM Authentication enabled\nLink: [AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 672,
+                  "startColumn": 1,
+                  "endLine": 703,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0176",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0176\nSeverity: MEDIUM\nMessage: Instance does not have IAM Authentication enabled\nLink: [AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 672,
+                  "startColumn": 1,
+                  "endLine": 703,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0176",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0176\nSeverity: MEDIUM\nMessage: Instance does not have IAM Authentication enabled\nLink: [AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 672,
+                  "startColumn": 1,
+                  "endLine": 703,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0176",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0176\nSeverity: MEDIUM\nMessage: Instance does not have IAM Authentication enabled\nLink: [AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 672,
+                  "startColumn": 1,
+                  "endLine": 703,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0176",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Artifact: terraform/modules/environment/main.tf\nType: terraform\nVulnerability AWS-0176\nSeverity: MEDIUM\nMessage: Instance does not have IAM Authentication enabled\nLink: [AWS-0176](https://avd.aquasec.com/misconfig/aws-0176)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/modules/environment/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 672,
+                  "startColumn": 1,
+                  "endLine": 703,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/modules/environment/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0089",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Artifact: terraform/shared/main.tf\nType: terraform\nVulnerability AWS-0089\nSeverity: LOW\nMessage: Bucket has logging disabled\nLink: [AWS-0089](https://avd.aquasec.com/misconfig/aws-0089)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/shared/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 93,
+                  "startColumn": 1,
+                  "endLine": 98,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/shared/main.tf"
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AWS-0136",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "Artifact: terraform/shared/main.tf\nType: terraform\nVulnerability AWS-0136\nSeverity: HIGH\nMessage: Topic encryption does not use a customer managed key.\nLink: [AWS-0136](https://avd.aquasec.com/misconfig/aws-0136)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "terraform/shared/main.tf",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 24,
+                  "startColumn": 1,
+                  "endLine": 24,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "terraform/shared/main.tf"
+              }
+            }
+          ]
+        }
+      ],
+      "columnKind": "utf16CodeUnits",
+      "originalUriBaseIds": {
+        "ROOTPATH": {
+          "uri": "file:///repo/"
+        }
+      }
+    }
+  ]
+}

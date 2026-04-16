@@ -15,6 +15,7 @@ Cette stack Terraform implémente l'architecture du schema Draw.io avec les cont
 - staging: stack environnement staging
 - prod: stack environnement prod
 - modules/environment: module reutilisable applique par chaque environnement
+- modules/ssm-environment: module reutilisable pour les parametres SSM par environnement
 
 ## Ressources deployees
 
@@ -25,7 +26,7 @@ Cette stack Terraform implémente l'architecture du schema Draw.io avec les cont
 - WAFv2 de base associe a CloudFront (AWS managed rules)
 - RDS chiffre KMS, non public, backups automatiques
 - S3 chiffre KMS, versioning, blocage public, policy TLS only
-- SSM Parameter Store (SecureString) pour secrets DB
+- SSM Parameter Store (SecureString) pour secrets DB, via un module commun par environnement
 - VPC endpoints: S3 gateway + SSM/EC2Messages/SSMMessages interface
 - VPC Flow Logs vers CloudWatch Logs chiffre KMS
 - Services partages securite: CloudTrail multi-region, CloudWatch, SNS alerting, password policy IAM
@@ -120,6 +121,43 @@ terraform apply tfplan
 ```
 
 Les stacks dev, staging et prod lisent les outputs de shared via terraform_remote_state local (`../shared/terraform.tfstate`).
+
+### Script de deploiement (shared + VPC independants)
+
+Script disponible:
+
+- `scripts/deploy-stacks.ps1`
+
+Exemples:
+
+```powershell
+Set-Location .\terraform
+
+# Deployer uniquement shared (plan + apply)
+.\scripts\deploy-stacks.ps1 -Target shared -Action apply
+
+# Deployer uniquement dev (plan + apply)
+.\scripts\deploy-stacks.ps1 -Target dev -Action apply
+
+# Deployer staging en mode demo
+.\scripts\deploy-stacks.ps1 -Target staging -Action apply -Demo
+
+# Deployer shared + dev + staging + prod dans l'ordre
+.\scripts\deploy-stacks.ps1 -Target all -Action apply
+
+# Plan seulement (sans apply)
+.\scripts\deploy-stacks.ps1 -Target prod -Action plan
+
+# Simulation PowerShell (WhatIf)
+.\scripts\deploy-stacks.ps1 -Target dev -Action apply -WhatIf
+```
+
+Notes:
+
+- `-Target dev|staging|prod` permet de lancer un seul VPC independamment.
+- `-Target shared` permet de lancer uniquement la couche partagee.
+- `-Target all` execute `shared`, puis `dev`, `staging`, `prod`.
+- En mode `-Demo`, le script attend `terraform.demo.tfvars` dans chaque dossier cible.
 
 ## Mode demo (objectif: cout proche de 0 EUR)
 

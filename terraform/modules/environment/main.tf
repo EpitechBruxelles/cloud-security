@@ -24,6 +24,14 @@ data "aws_ami" "al2023" {
   }
 }
 
+data "aws_ec2_managed_prefix_list" "cloudfront_origin" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
+data "aws_canonical_user_id" "current" {}
+
+data "aws_cloudfront_log_delivery_canonical_user_id" "this" {}
+
 resource "random_password" "db" {
   count            = var.enable_rds ? 1 : 0
   length           = 24
@@ -32,8 +40,8 @@ resource "random_password" "db" {
 }
 
 locals {
-  project_slug = replace(replace(lower(var.project_name), "/[^a-z0-9-]/", "-"), "/-+/", "-")
-  name         = "${local.project_slug}-${var.environment}"
+  project_slug     = replace(replace(lower(var.project_name), "/[^a-z0-9-]/", "-"), "/-+/", "-")
+  name             = "${local.project_slug}-${var.environment}"
   vpc_dns_resolver = cidrhost(var.vpc_cidr, 2)
 
   common_tags = merge(
@@ -76,7 +84,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.this.id
   cidr_block              = var.public_subnet_cidr
   availability_zone       = data.aws_availability_zones.available.names[0]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = merge(local.common_tags, { Name = "${local.name}-public-a" })
 }
@@ -227,27 +235,19 @@ resource "aws_security_group" "public" {
   revoke_rules_on_delete = true
 
   ingress {
-    description = "Allow HTTP from internet (CloudFront origin)"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow HTTPS from internet"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "Allow HTTP from CloudFront origin"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront_origin.id]
   }
 
   egress {
-    description = "Allow HTTPS outbound for updates"
+    description = "Allow HTTPS to VPC endpoints"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.app_subnet_cidr]
   }
 
   dynamic "egress" {
@@ -414,6 +414,7 @@ resource "aws_instance" "app" {
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.app.id
   vpc_security_group_ids      = [aws_security_group.app.id]
+  ebs_optimized               = true
   associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.ec2.name
   monitoring                  = var.enable_detailed_monitoring
@@ -459,7 +460,8 @@ resource "aws_instance" "public" {
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public.id
   vpc_security_group_ids      = [aws_security_group.public.id]
-  associate_public_ip_address = true
+  ebs_optimized               = true
+  associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.ec2.name
   monitoring                  = var.enable_detailed_monitoring
 
@@ -478,55 +480,108 @@ resource "aws_instance" "public" {
   user_data_replace_on_change = true
 
   user_data = <<-EOF
-              #!/bin/bash
-              set -euo pipefail
-              dnf -y update
-              dnf -y install nginx openssl python3
+#!/bin/bash
+set -euo pipefail
 
-              mkdir -p /etc/pki/tls/private
-              openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
-                -keyout /etc/pki/tls/private/localhost.key \
-                -out /etc/pki/tls/certs/localhost.crt \
-                -subj "/CN=localhost"
+PYTHON_BIN="$(command -v python3 || command -v python3.9 || true)"
+if [ -z "$PYTHON_BIN" ] && [ -x /usr/libexec/platform-python ]; then
+  PYTHON_BIN="/usr/libexec/platform-python"
+fi
+if [ -z "$PYTHON_BIN" ]; then
+  echo "No Python interpreter found on public instance" >/var/log/public-bootstrap-error.log
+  exit 1
+fi
 
-              cat >/etc/nginx/conf.d/default.conf <<'NGINXEOF'
-              server {
-                listen 80;
-                server_name _;
+cat >/opt/public-server.py <<'PYEOF'
+import http.server
+import os
+from urllib import error, request
 
-                location / {
-                  ${var.enable_private_app_tier ? "proxy_pass http://${aws_instance.app[0].private_ip}:8080;\n                  proxy_set_header Host $host;\n                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n                  proxy_set_header X-Forwarded-Proto $scheme;" : "default_type text/plain;\n                  return 200 \"Hello World !\";"}
-                }
-              }
 
-              server {
-                listen 443 ssl;
-                server_name _;
+APP_HOST = os.environ.get("APP_HOST", "").strip()
 
-                ssl_protocols TLSv1.2 TLSv1.3;
-                ssl_certificate /etc/pki/tls/certs/localhost.crt;
-                ssl_certificate_key /etc/pki/tls/private/localhost.key;
 
-                location / {
-                  ${var.enable_private_app_tier ? "proxy_pass http://${aws_instance.app[0].private_ip}:8080;\n                  proxy_set_header Host $host;\n                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n                  proxy_set_header X-Forwarded-Proto $scheme;" : "default_type text/plain;\n                  return 200 \"Hello World !\";"}
-                }
-              }
-              NGINXEOF
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self._respond()
 
-              systemctl enable nginx
-              systemctl restart nginx
-              EOF
+    def do_HEAD(self):
+        self._respond(head_only=True)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Allow", "GET, HEAD, OPTIONS")
+        self.end_headers()
+
+    def _respond(self, head_only=False):
+        if APP_HOST:
+            target = request.Request(
+                f"http://{APP_HOST}:8080{self.path}",
+                method=self.command,
+            )
+            try:
+                with request.urlopen(target, timeout=5) as upstream:
+                    body = upstream.read()
+                    self.send_response(upstream.status)
+                    for header_name, header_value in upstream.headers.items():
+                        if header_name.lower() not in {"transfer-encoding", "connection", "content-length"}:
+                            self.send_header(header_name, header_value)
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    if not head_only:
+                        self.wfile.write(body)
+                    return
+            except error.URLError:
+                pass
+
+        body = b"Hello World !"
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(body)
+
+
+if __name__ == "__main__":
+    server = http.server.ThreadingHTTPServer(("0.0.0.0", 80), Handler)
+    server.serve_forever()
+PYEOF
+
+APP_HOST="${var.enable_private_app_tier ? aws_instance.app[0].private_ip : ""}" nohup "$PYTHON_BIN" /opt/public-server.py >/var/log/public.log 2>&1 &
+EOF
 
   tags = merge(local.common_tags, { Name = "${local.name}-public" })
 }
 
+resource "aws_eip" "public" {
+  domain = "vpc"
+
+  tags = merge(local.common_tags, { Name = "${local.name}-public-eip" })
+}
+
+resource "aws_eip_association" "public" {
+  allocation_id = aws_eip.public.id
+  instance_id   = aws_instance.public.id
+}
+
+#checkov:skip=CKV2_AWS_42: Demo mode uses the AWS-managed CloudFront certificate because the repository does not manage a public domain.
+#checkov:skip=CKV_AWS_310: Single-origin demo distribution does not use origin failover.
+#checkov:skip=CKV_AWS_374: Geo restriction is intentionally left open for the demo audience.
 resource "aws_cloudfront_distribution" "public" {
   count   = var.enable_cloudfront ? 1 : 0
   enabled = true
+  depends_on = [
+    aws_eip_association.public,
+    aws_s3_bucket_acl.app_data_cloudfront_logs
+  ]
 
   origin {
-    domain_name = aws_instance.public.public_dns
-    origin_id   = "${local.name}-public-origin"
+    domain_name = coalesce(
+      aws_eip.public.public_dns,
+      "ec2-${replace(aws_eip.public.public_ip, ".", "-")}.${var.aws_region}.compute.amazonaws.com"
+    )
+    origin_id = "${local.name}-public-origin"
 
     custom_origin_config {
       http_port              = 80
@@ -537,9 +592,10 @@ resource "aws_cloudfront_distribution" "public" {
   }
 
   default_cache_behavior {
-    target_origin_id       = "${local.name}-public-origin"
-    viewer_protocol_policy = "redirect-to-https"
-    compress               = true
+    target_origin_id           = "${local.name}-public-origin"
+    viewer_protocol_policy     = "redirect-to-https"
+    compress                   = true
+    response_headers_policy_id = "67f7725c-6f97-4210-82d7-5512b31e9d03"
 
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods  = ["GET", "HEAD", "OPTIONS"]
@@ -551,6 +607,14 @@ resource "aws_cloudfront_distribution" "public" {
         forward = "none"
       }
     }
+  }
+
+  default_root_object = "index.html"
+
+  logging_config {
+    bucket          = aws_s3_bucket.app_data.bucket_domain_name
+    include_cookies = false
+    prefix          = "cloudfront/"
   }
 
   restrictions {
@@ -626,6 +690,28 @@ resource "aws_wafv2_web_acl" "cloudfront" {
     }
   }
 
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 3
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${local.name}-waf-known-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "${local.name}-waf"
@@ -669,54 +755,88 @@ resource "aws_db_parameter_group" "tls" {
   tags = merge(local.common_tags, { Name = "${local.name}-db-params" })
 }
 
-resource "aws_db_instance" "main" {
-  count                           = var.enable_rds ? 1 : 0
-  identifier                      = "${local.name}-db"
-  engine                          = var.db_engine
-  engine_version                  = local.db_engine_version
-  instance_class                  = local.db_instance_class
-  allocated_storage               = var.db_allocated_storage
-  storage_type                    = "gp2"
-  db_subnet_group_name            = aws_db_subnet_group.this[0].name
-  vpc_security_group_ids          = [aws_security_group.db[0].id]
-  username                        = "appadmin"
-  password                        = random_password.db[0].result
-  db_name                         = local.db_name
-  port                            = local.db_port
-  parameter_group_name            = aws_db_parameter_group.tls[0].name
-  backup_retention_period         = var.demo_mode ? 1 : var.db_backup_retention
-  backup_window                   = "03:00-04:00"
-  maintenance_window              = "sun:04:00-sun:05:00"
-  auto_minor_version_upgrade      = true
-  deletion_protection             = var.rds_deletion_protection
-  skip_final_snapshot             = var.rds_skip_final_snapshot
-  final_snapshot_identifier       = var.rds_skip_final_snapshot ? null : "${local.name}-final-snapshot"
-  copy_tags_to_snapshot           = true
-  publicly_accessible             = false
-  storage_encrypted               = true
-  kms_key_id                      = local.use_customer_managed_kms ? var.kms_key_arn : null
-  performance_insights_enabled    = !var.demo_mode
-  performance_insights_kms_key_id = local.use_customer_managed_kms ? var.kms_key_arn : null
-  enabled_cloudwatch_logs_exports = var.db_engine == "postgres" ? ["postgresql"] : ["error", "general", "slowquery"]
+resource "aws_iam_role" "rds_monitoring" {
+  count = var.enable_rds ? 1 : 0
+  name  = "${local.name}-rds-monitoring-role"
 
-  tags = merge(local.common_tags, { Name = "${local.name}-rds" })
-}
-
-resource "aws_ssm_parameter" "db_password" {
-  count  = var.enable_rds ? 1 : 0
-  name   = "/${var.project_name}/${var.environment}/database/password"
-  type   = "SecureString"
-  value  = random_password.db[0].result
-  key_id = local.use_customer_managed_kms ? var.kms_key_arn : null
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "monitoring.rds.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 
   tags = local.common_tags
 }
 
-resource "aws_ssm_parameter" "db_endpoint" {
+resource "aws_iam_role_policy_attachment" "rds_monitoring" {
+  count      = var.enable_rds ? 1 : 0
+  role       = aws_iam_role.rds_monitoring[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+}
+
+#checkov:skip=CKV_AWS_157: Demo and free-tier environments intentionally keep the database single-AZ.
+resource "aws_db_instance" "main" {
+  count                                 = var.enable_rds ? 1 : 0
+  identifier                            = "${local.name}-db"
+  engine                                = var.db_engine
+  engine_version                        = local.db_engine_version
+  instance_class                        = local.db_instance_class
+  allocated_storage                     = var.db_allocated_storage
+  storage_type                          = "gp2"
+  db_subnet_group_name                  = aws_db_subnet_group.this[0].name
+  vpc_security_group_ids                = [aws_security_group.db[0].id]
+  username                              = "appadmin"
+  password                              = random_password.db[0].result
+  db_name                               = local.db_name
+  port                                  = local.db_port
+  parameter_group_name                  = aws_db_parameter_group.tls[0].name
+  backup_retention_period               = var.demo_mode ? 1 : var.db_backup_retention
+  backup_window                         = "03:00-04:00"
+  maintenance_window                    = "sun:04:00-sun:05:00"
+  auto_minor_version_upgrade            = true
+  deletion_protection                   = var.rds_deletion_protection
+  skip_final_snapshot                   = var.rds_skip_final_snapshot
+  final_snapshot_identifier             = var.rds_skip_final_snapshot ? null : "${local.name}-final-snapshot"
+  copy_tags_to_snapshot                 = true
+  publicly_accessible                   = false
+  storage_encrypted                     = true
+  kms_key_id                            = local.use_customer_managed_kms ? var.kms_key_arn : null
+  performance_insights_enabled          = true
+  performance_insights_retention_period = 7
+  performance_insights_kms_key_id       = local.use_customer_managed_kms ? var.kms_key_arn : null
+  enabled_cloudwatch_logs_exports       = var.db_engine == "postgres" ? ["postgresql"] : ["error", "general", "slowquery"]
+  monitoring_interval                   = 60
+  monitoring_role_arn                   = aws_iam_role.rds_monitoring[0].arn
+
+  tags = merge(local.common_tags, { Name = "${local.name}-rds" })
+}
+
+module "environment_ssm" {
+  source = "../ssm-environment"
+
   count = var.enable_rds ? 1 : 0
-  name  = "/${var.project_name}/${var.environment}/database/endpoint"
-  type  = "String"
-  value = aws_db_instance.main[0].endpoint
+
+  parameters = {
+    db_password = {
+      name   = "/${var.project_name}/${var.environment}/database/password"
+      type   = "SecureString"
+      value  = random_password.db[0].result
+      key_id = var.kms_key_arn != null && var.kms_key_arn != "" ? var.kms_key_arn : ""
+    }
+    db_endpoint = {
+      name   = "/${var.project_name}/${var.environment}/database/endpoint"
+      type   = "String"
+      value  = aws_db_instance.main[0].endpoint
+      key_id = ""
+    }
+  }
 
   tags = local.common_tags
 }
@@ -726,6 +846,42 @@ resource "aws_s3_bucket" "app_data" {
   force_destroy = false
 
   tags = merge(local.common_tags, { Name = "${local.name}-data" })
+}
+
+resource "aws_s3_bucket_ownership_controls" "app_data" {
+  bucket = aws_s3_bucket.app_data.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "app_data_cloudfront_logs" {
+  bucket = aws_s3_bucket.app_data.id
+
+  access_control_policy {
+    grant {
+      grantee {
+        type = "CanonicalUser"
+        id   = data.aws_canonical_user_id.current.id
+      }
+      permission = "FULL_CONTROL"
+    }
+
+    grant {
+      grantee {
+        type = "CanonicalUser"
+        id   = data.aws_cloudfront_log_delivery_canonical_user_id.this.id
+      }
+      permission = "FULL_CONTROL"
+    }
+
+    owner {
+      id = data.aws_canonical_user_id.current.id
+    }
+  }
+
+  depends_on = [aws_s3_bucket_ownership_controls.app_data]
 }
 
 resource "aws_s3_bucket_versioning" "app_data" {

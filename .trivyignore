@@ -1,0 +1,2 @@
+# Demo/free-tier keeps the shared SNS topic on the AWS-managed key.
+AWS-0136

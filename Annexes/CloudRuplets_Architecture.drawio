@@ -1,0 +1,276 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
+  <diagram id="wK--9wDf3mjCDqrRhiAT" name="Page-1">
+    <mxGraphModel dx="2022" dy="1203" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="CloudRuplets — AWS Free Tier Architecture | eu-west-3 (Paris) | RGPD Compliant | Terraform IaC" style="text;html=1;strokeColor=none;fillColor=#1e2d3d;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontColor=#ECF0F1;fontSize=13;fontStyle=1;arcSize=4;" parent="1" vertex="1">
+          <mxGeometry x="20" y="20" width="1610" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="internet_zone" value="INTERNET" style="swimlane;fontStyle=1;fontSize=11;fillColor=#154360;strokeColor=#1A6090;fontColor=#ECF0F1;startSize=30;arcSize=4;" parent="1" vertex="1">
+          <mxGeometry x="20" y="110" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="users" value="👤 Users&#xa;(Web / Mobile)" style="rounded=1;whiteSpace=wrap;fillColor=#1B4F72;strokeColor=#2980B9;fontColor=#ECF0F1;fontSize=10;" parent="internet_zone" vertex="1">
+          <mxGeometry x="10" y="40" width="85" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="attackers" value="💀 Attackers&#xa;(External)" style="rounded=1;whiteSpace=wrap;fillColor=#641E16;strokeColor=#E74C3C;fontColor=#ECF0F1;fontSize=10;" parent="internet_zone" vertex="1">
+          <mxGeometry x="105" y="40" width="85" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="waf_shield" value="• ⚠️ WAF Shield Basic" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#E67E22;fontColor=#E67E22;fontSize=9;fontStyle=1;arcSize=6;" parent="1" vertex="1">
+          <mxGeometry x="260" y="210" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="route53" value="🌐 AWS CloudFront (Free Tier)&#xa;• HTTPS / TLS 1.3 terminaison" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#E74C3C;fontColor=#E74C3C;fontSize=9;" parent="1" vertex="1">
+          <mxGeometry x="260" y="110" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_vpc" value="🔴 PROD VPC — 10.0.0.0/16" style="swimlane;fontStyle=1;fontSize=11;fillColor=#1A0A0A;strokeColor=#C0392B;fontColor=#E74C3C;startSize=35;arcSize=3;strokeWidth=3;" parent="1" vertex="1">
+          <mxGeometry x="490" y="100" width="340" height="740" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_pub" value="PUBLIC SUBNET  eu-west-3a  (10.0.1.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#0D2137;strokeColor=#1E8BC3;fontColor=#1E8BC3;startSize=25;arcSize=3;" parent="prod_vpc" vertex="1">
+          <mxGeometry x="10" y="45" width="320" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_ec2_pub" value="🖥 EC2 t3.micro&#xa;Nginx reverse proxy&#xa;TLS terminaison locale" style="rounded=1;whiteSpace=wrap;fillColor=#154360;strokeColor=#1E8BC3;fontColor=#ECF0F1;fontSize=9;" parent="prod_pub" vertex="1">
+          <mxGeometry x="10" y="35" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_igw" value="🌐 Internet Gateway&#xa;Sortie via EC2 Nginx" style="rounded=1;whiteSpace=wrap;fillColor=#154360;strokeColor=#1E8BC3;fontColor=#ECF0F1;fontSize=9;" parent="prod_pub" vertex="1">
+          <mxGeometry x="168" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_sg_pub" value="SG-PUBLIC: inbound 443 + 80 only | deny all else" style="text;html=1;strokeColor=none;fillColor=#1A5276;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="prod_pub" vertex="1">
+          <mxGeometry x="10" y="123" width="300" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_app" value="PRIVATE SUBNET — App Tier  (10.0.2.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#0D2217;strokeColor=#27AE60;fontColor=#27AE60;startSize=25;arcSize=3;" parent="prod_vpc" vertex="1">
+          <mxGeometry x="10" y="215" width="320" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_ec2_app" value="🖥 EC2 t3.micro&#xa;App Backend (Python/Node)&#xa;IMDSv2 enforced" style="rounded=1;whiteSpace=wrap;fillColor=#1E4D2B;strokeColor=#27AE60;fontColor=#ECF0F1;fontSize=9;" parent="prod_app" vertex="1">
+          <mxGeometry x="10" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_ssm" value="🔑 SSM Parameter Store&#xa;(SecureString = Gratuit)&#xa;Remplace Secrets Manager&#xa;Chiffré KMS" style="rounded=1;whiteSpace=wrap;fillColor=#4A235A;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="prod_app" vertex="1">
+          <mxGeometry x="170" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_iam" value="🔐 IAM Role (Least Privilege)&#xa;No * permissions · IMDSv2" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="prod_app" vertex="1">
+          <mxGeometry x="10" y="125" width="140" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_sg_app" value="SG-APP: 8080 from Nginx-SG only" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="prod_app" vertex="1">
+          <mxGeometry x="170" y="125" width="140" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_flowlog" value="VPC Flow Logs → S3 | CloudWatch Logs" style="text;html=1;strokeColor=none;fillColor=#1A5276;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="prod_app" vertex="1">
+          <mxGeometry x="10" y="188" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_db" value="ISOLATED SUBNET — Data Tier  (10.0.3.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#1A0A2E;strokeColor=#8E44AD;fontColor=#8E44AD;startSize=25;arcSize=3;" parent="prod_vpc" vertex="1">
+          <mxGeometry x="10" y="445" width="320" height="225" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_rds" value="🗄 RDS db.t3.micro&#xa;PostgreSQL&#xa;Multi-AZ · 20Go SSD&#xa;TLS forcé · KMS chiffré" style="rounded=1;whiteSpace=wrap;fillColor=#4A0E72;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="prod_db" vertex="1">
+          <mxGeometry x="10" y="35" width="140" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_s3" value="📦 S3&#xa;5Go&#xa;SSE-KMS&#xa;Accès public bloqué" style="rounded=1;whiteSpace=wrap;fillColor=#4A0E72;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="prod_db" vertex="1">
+          <mxGeometry x="170" y="35" width="140" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_rds_backup" value="💾 RDS Automated Backups&#xa;7j gratuit inclus Free Tier" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="prod_db" vertex="1">
+          <mxGeometry x="10" y="130" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_sg_db" value="SG-DB: 3306/5432 from APP-SG only | No internet route" style="text;html=1;strokeColor=none;fillColor=#641E16;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="prod_db" vertex="1">
+          <mxGeometry x="10" y="190" width="300" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_kms_label" value="🔑 KMS CMK: prod-key (Free: 20k req/mois) | Rotation annuelle" style="text;html=1;strokeColor=none;fillColor=#4A235A;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="prod_vpc" vertex="1">
+          <mxGeometry x="10" y="680" width="320" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="prod_gdpr" value="✅ RGPD Art.32 · Data minimisation · DPA logged" style="text;html=1;strokeColor=none;fillColor=#1E4D2B;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="prod_vpc" vertex="1">
+          <mxGeometry x="10" y="710" width="320" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="staging_vpc" value="🟡 STAGING VPC — 10.1.0.0/16" style="swimlane;fontStyle=1;fontSize=11;fillColor=#1A130A;strokeColor=#D68910;fontColor=#F39C12;startSize=35;arcSize=3;strokeWidth=3;" parent="1" vertex="1">
+          <mxGeometry x="860" y="100" width="340" height="740" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_pub" value="PUBLIC SUBNET  eu-west-3a  (10.1.1.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#0D2137;strokeColor=#1E8BC3;fontColor=#1E8BC3;startSize=25;arcSize=3;" parent="staging_vpc" vertex="1">
+          <mxGeometry x="10" y="45" width="320" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_ec2_pub" value="🖥 EC2 t3.micro&#xa;Nginx reverse proxy&#xa;TLS + Let&#39;s Encrypt&#xa;Accès équipe staging" style="rounded=1;whiteSpace=wrap;fillColor=#154360;strokeColor=#1E8BC3;fontColor=#ECF0F1;fontSize=9;" parent="stg_pub" vertex="1">
+          <mxGeometry x="10" y="35" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_igw" value="🌐 Internet Gateway&#xa;Sortie via EC2 Nginx" style="rounded=1;whiteSpace=wrap;fillColor=#154360;strokeColor=#1E8BC3;fontColor=#ECF0F1;fontSize=9;" parent="stg_pub" vertex="1">
+          <mxGeometry x="168" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_sg_pub" value="SG-PUBLIC: 443 inbound only | deny all else" style="text;html=1;strokeColor=none;fillColor=#1A5276;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="stg_pub" vertex="1">
+          <mxGeometry x="10" y="123" width="300" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_app" value="PRIVATE SUBNET — App Tier  (10.1.2.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#0D2217;strokeColor=#27AE60;fontColor=#27AE60;startSize=25;arcSize=3;" parent="staging_vpc" vertex="1">
+          <mxGeometry x="10" y="215" width="320" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_ec2_app" value="🖥 EC2 t3.micro&#xa;App Backend staging&#xa;IMDSv2 enforced" style="rounded=1;whiteSpace=wrap;fillColor=#1E4D2B;strokeColor=#27AE60;fontColor=#ECF0F1;fontSize=9;" parent="stg_app" vertex="1">
+          <mxGeometry x="10" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_ssm" value="🔑 SSM Parameter Store&#xa;(SecureString gratuit)&#xa;Secrets staging isolés&#xa;KMS chiffré" style="rounded=1;whiteSpace=wrap;fillColor=#4A235A;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="stg_app" vertex="1">
+          <mxGeometry x="170" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_iam" value="🔐 IAM Role (Staging)&#xa;Least Privilege · Scoped" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="stg_app" vertex="1">
+          <mxGeometry x="10" y="125" width="140" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_sg_app" value="SG-APP: 8080 from Nginx-SG only" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="stg_app" vertex="1">
+          <mxGeometry x="170" y="125" width="140" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_flowlog" value="VPC Flow Logs → S3 | CloudWatch Logs" style="text;html=1;strokeColor=none;fillColor=#1A5276;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="stg_app" vertex="1">
+          <mxGeometry x="10" y="188" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_db" value="ISOLATED SUBNET — Data Tier  (10.1.3.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#1A0A2E;strokeColor=#8E44AD;fontColor=#8E44AD;startSize=25;arcSize=3;" parent="staging_vpc" vertex="1">
+          <mxGeometry x="10" y="445" width="320" height="225" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_rds" value="🗄 RDS db.t3.micro&#xa;PostgreSQL&#xa;Multi-AZ · 20Go SSD&#xa;TLS forcé · KMS chiffré" style="rounded=1;whiteSpace=wrap;fillColor=#4A0E72;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="stg_db" vertex="1">
+          <mxGeometry x="10" y="35" width="140" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_s3" value="📦 S3&#xa;5Go&#xa;KMS SSE&#xa;Données anonymisées&#xa;Accès public bloqué" style="rounded=1;whiteSpace=wrap;fillColor=#4A0E72;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="stg_db" vertex="1">
+          <mxGeometry x="170" y="35" width="140" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_rds_backup" value="💾 RDS Automated Backups&#xa;3j gratuit inclus Free Tier" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="stg_db" vertex="1">
+          <mxGeometry x="10" y="130" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_sg_db" value="SG-DB: 3306/5432 from APP-SG only | No internet route" style="text;html=1;strokeColor=none;fillColor=#641E16;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="stg_db" vertex="1">
+          <mxGeometry x="10" y="190" width="300" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_kms_label" value="🔑 KMS CMK: staging-key | Séparé prod" style="text;html=1;strokeColor=none;fillColor=#4A235A;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="staging_vpc" vertex="1">
+          <mxGeometry x="10" y="680" width="320" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="stg_gdpr" value="✅ Pas de données réelles | Données de test anonymisées" style="text;html=1;strokeColor=none;fillColor=#1E4D2B;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="staging_vpc" vertex="1">
+          <mxGeometry x="10" y="710" width="320" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_vpc" value="🔵 DEV VPC — 10.2.0.0/16  (AWS Free Tier)" style="swimlane;fontStyle=1;fontSize=11;fillColor=#0A0A1A;strokeColor=#1A5276;fontColor=#2980B9;startSize=35;arcSize=3;strokeWidth=3;" parent="1" vertex="1">
+          <mxGeometry x="1230" y="100" width="340" height="680" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_pub" value="PUBLIC SUBNET  eu-west-3a  (10.2.1.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#0D2137;strokeColor=#1E8BC3;fontColor=#1E8BC3;startSize=25;arcSize=3;" parent="dev_vpc" vertex="1">
+          <mxGeometry x="10" y="45" width="320" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_ec2_pub" value="🖥 EC2 t3.micro&#xa;Nginx reverse proxy&#xa;TLS + Let&#39;s Encrypt&#xa;Accès équipe dev" style="rounded=1;whiteSpace=wrap;fillColor=#154360;strokeColor=#1E8BC3;fontColor=#ECF0F1;fontSize=9;" parent="dev_pub" vertex="1">
+          <mxGeometry x="10" y="35" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_igw" value="🌐 Internet Gateway&#xa;Sortie via EC2 Nginx" style="rounded=1;whiteSpace=wrap;fillColor=#154360;strokeColor=#1E8BC3;fontColor=#ECF0F1;fontSize=9;" parent="dev_pub" vertex="1">
+          <mxGeometry x="168" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_sg_pub" value="SG-PUBLIC: 443 only | SSH via SSM (pas de port 22 exposé)" style="text;html=1;strokeColor=none;fillColor=#1A5276;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="dev_pub" vertex="1">
+          <mxGeometry x="10" y="123" width="300" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_app" value="PRIVATE SUBNET — App Tier  (10.2.2.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#0D2217;strokeColor=#27AE60;fontColor=#27AE60;startSize=25;arcSize=3;" parent="dev_vpc" vertex="1">
+          <mxGeometry x="10" y="215" width="320" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_ec2_app" value="🖥 EC2 t3.micro&#xa;App Backend dev&#xa;IMDSv2 enforced" style="rounded=1;whiteSpace=wrap;fillColor=#1E4D2B;strokeColor=#27AE60;fontColor=#ECF0F1;fontSize=9;" parent="dev_app" vertex="1">
+          <mxGeometry x="10" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_ssm" value="🔑 SSM Parameter Store&#xa;(SecureString gratuit)&#xa;Secrets dev isolés&#xa;KMS chiffré" style="rounded=1;whiteSpace=wrap;fillColor=#4A235A;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="dev_app" vertex="1">
+          <mxGeometry x="170" y="35" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_iam" value="🔐 IAM Role (Dev)&#xa;Dev-scoped permissions&#xa;IMDSv2 only" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="dev_app" vertex="1">
+          <mxGeometry x="10" y="125" width="140" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_flowlog" value="VPC Flow Logs → S3 | CloudWatch Logs" style="text;html=1;strokeColor=none;fillColor=#1A5276;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="dev_app" vertex="1">
+          <mxGeometry x="10" y="188" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="8nqfvbydA-nbC8eikFXg-2" value="SG-APP: 8080 from Nginx-SG only" style="rounded=1;whiteSpace=wrap;fillColor=#212F3C;strokeColor=#5D6D7E;fontColor=#ECF0F1;fontSize=9;" parent="dev_app" vertex="1">
+          <mxGeometry x="170" y="125" width="140" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_db" value="ISOLATED SUBNET — Data Tier  (10.2.3.0/24)" style="swimlane;fontStyle=1;fontSize=9;fillColor=#1A0A2E;strokeColor=#8E44AD;fontColor=#8E44AD;startSize=25;arcSize=3;" parent="dev_vpc" vertex="1">
+          <mxGeometry x="10" y="445" width="320" height="165" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_rds" value="🗄 RDS db.t3.micro&#xa;PostgreSQL&#xa;Multi-AZ · 20Go SSD&#xa;TLS forcé · KMS chiffré" style="rounded=1;whiteSpace=wrap;fillColor=#4A0E72;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="dev_db" vertex="1">
+          <mxGeometry x="10" y="35" width="140" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_s3" value="📦 S3&#xa;5Go&#xa;KMS SSE&#xa;Pas de données réelles&#xa;Accès public bloqué" style="rounded=1;whiteSpace=wrap;fillColor=#4A0E72;strokeColor=#8E44AD;fontColor=#ECF0F1;fontSize=9;" parent="dev_db" vertex="1">
+          <mxGeometry x="170" y="35" width="140" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_sg_db" value="SG-DB: 3306/5432 from APP-SG only | No internet route" style="text;html=1;strokeColor=none;fillColor=#641E16;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="dev_db" vertex="1">
+          <mxGeometry x="10" y="130" width="300" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_kms_label" value="🔑 KMS CMK: dev-key | Free Tier 20k req/mois" style="text;html=1;strokeColor=none;fillColor=#4A235A;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="dev_vpc" vertex="1">
+          <mxGeometry x="10" y="620" width="320" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="dev_anon" value="⚠️ Données anonymisées uniquement — dump prod interdit" style="text;html=1;strokeColor=none;fillColor=#7D6608;align=center;fontColor=#ECF0F1;fontSize=8;rounded=1;" parent="dev_vpc" vertex="1">
+          <mxGeometry x="10" y="650" width="320" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="shared_services" value="☁️ SHARED SECURITY SERVICES — AWS Free Tier  (Tous les VPCs)" style="swimlane;fontStyle=1;fontSize=11;fillColor=#12232E;strokeColor=#F1C40F;fontColor=#F1C40F;startSize=30;arcSize=4;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="660" y="880" width="940" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_cloudtrail" value="📋 CloudTrail&#xa;1 trail multi-région&#xa;Tous les API calls loggés&#xa;→ S3 chiffré KMS" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#E67E22;fontColor=#E67E22;fontSize=9;" parent="shared_services" vertex="1">
+          <mxGeometry x="10" y="40" width="145" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_cloudwatch" value="📊 CloudWatch&#xa;Alarms → SNS → Email" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#1E8BC3;fontColor=#1E8BC3;fontSize=9;" parent="shared_services" vertex="1">
+          <mxGeometry x="165" y="40" width="145" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_kms" value="🔑 KMS&#xa;CMK par environnement&#xa;Rotation annuelle" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#8E44AD;fontColor=#8E44AD;fontSize=9;" parent="shared_services" vertex="1">
+          <mxGeometry x="320" y="40" width="145" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_iam" value="🔐 IAM&#xa;MFA enforced&#xa;No root usage&#xa;Access Analyzer ON&#xa;Least privilege RBAC" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#F39C12;fontColor=#F39C12;fontSize=9;" parent="shared_services" vertex="1">
+          <mxGeometry x="475" y="40" width="145" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_ssm" value="🔑 SSM Parameter Store&#xa;Chiffré KMS automatique&#xa;✅ No hardcoded secrets" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#27AE60;fontColor=#27AE60;fontSize=9;" parent="shared_services" vertex="1">
+          <mxGeometry x="630" y="40" width="145" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="svc_sns" value="📣 SNS&#xa;Alertes CloudWatch&#xa;Email équipe sécurité&#xa;Incident Response" style="rounded=1;whiteSpace=wrap;fillColor=#1B2631;strokeColor=#E67E22;fontColor=#E67E22;fontSize=9;" parent="shared_services" vertex="1">
+          <mxGeometry x="785" y="40" width="145" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd" value="⚙️ CI/CD Pipeline — GitHub Actions | Hard fail sur tous les findings" style="swimlane;fontStyle=1;fontSize=11;fillColor=#12232E;strokeColor=#9B59B6;fontColor=#9B59B6;startSize=30;arcSize=4;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="160" y="880" width="460" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="ci_gitleaks" value="🔓 Gitleaks&#xa;Secret scanning&#xa;Pre-commit hook" style="rounded=1;whiteSpace=wrap;fillColor=#2C1654;strokeColor=#9B59B6;fontColor=#ECF0F1;fontSize=9;" parent="cicd" vertex="1">
+          <mxGeometry x="10" y="45" width="95" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ci_checkov" value="✅ Checkov&#xa;IaC Terraform scan&#xa;Règles CIS AWS" style="rounded=1;whiteSpace=wrap;fillColor=#2C1654;strokeColor=#9B59B6;fontColor=#ECF0F1;fontSize=9;" parent="cicd" vertex="1">
+          <mxGeometry x="115" y="45" width="95" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ci_trivy" value="🐳 Trivy&#xa;Container scan&#xa;CVE check" style="rounded=1;whiteSpace=wrap;fillColor=#2C1654;strokeColor=#9B59B6;fontColor=#ECF0F1;fontSize=9;" parent="cicd" vertex="1">
+          <mxGeometry x="220" y="45" width="95" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ci_tf" value="🏗 Terraform&#xa;Plan → Apply&#xa;OIDC auth (no keys)&#xa;State S3+DynamoDB" style="rounded=1;whiteSpace=wrap;fillColor=#2C1654;strokeColor=#9B59B6;fontColor=#ECF0F1;fontSize=9;" parent="cicd" vertex="1">
+          <mxGeometry x="325" y="45" width="125" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_ci1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9B59B6;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="cicd" source="ci_gitleaks" target="ci_checkov" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_ci2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9B59B6;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="cicd" source="ci_checkov" target="ci_trivy" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_ci3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9B59B6;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="cicd" source="ci_trivy" target="ci_tf" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd_note" value="OIDC — Aucune clé AWS dans GitHub&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(155, 89, 182), rgb(182, 125, 205));&quot;&gt;Pipelines séparés: dev → staging → prod (approbation manuelle prod)&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(155, 89, 182), rgb(182, 125, 205));&quot;&gt;State Terraform: S3+DynamoDB Lock (Free Tier)&lt;/span&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=#1A2530;align=center;fontColor=#9B59B6;fontSize=8;rounded=1;" parent="cicd" vertex="1">
+          <mxGeometry x="10" y="130" width="440" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_users_cf" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#F1C40F;fontColor=#F1C40F;fontSize=8;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="internet_zone" target="waf_shield" edge="1">
+          <mxGeometry x="-0.1321" relative="1" as="geometry">
+            <mxPoint x="220" y="173" as="sourcePoint" />
+            <mxPoint x="365" y="165" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="120" y="230" />
+            </Array>
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr_cf_r53" value="Trafic filtré" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#E67E22;fontColor=#E67E22;fontSize=8;" parent="1" source="waf_shield" target="route53" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_r53_prod" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#C0392B;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="route53" target="prod_ec2_pub" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="485" y="140" />
+              <mxPoint x="485" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr_r53_stg" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#D68910;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="route53" target="stg_ec2_pub" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="140" />
+              <mxPoint x="480" y="90" />
+              <mxPoint x="850" y="90" />
+              <mxPoint x="850" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr_r53_dev" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#1A5276;exitX=1;exitY=0.5;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="route53" target="dev_ec2_pub" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="470" y="140" />
+              <mxPoint x="470" y="80" />
+              <mxPoint x="1220" y="80" />
+              <mxPoint x="1220" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
